@@ -85,6 +85,7 @@ function viewHistoricalRates() {
         if (data.data && data.data[dateKey] && data.data[dateKey][targetCurrency]) {
           const rate = data.data[dateKey][targetCurrency];
           historicalRatesContainer.textContent = `Historical exchange rate on ${date}: 1 ${baseCurrency} = ${rate} ${targetCurrency}`;
+          //converterContainer.classList.add('expanded'); // Expand the container
         } else {
           historicalRatesContainer.textContent = 'Historical exchange rate not available';
         }
@@ -110,7 +111,7 @@ function saveFavoriteCurrencyPair() {
     favoriteCurrencyPairsContainer.appendChild(favoriteItem);
 
     // Save to database
-    fetch('/api/favorites', {
+    fetch('http://localhost:3000/api/favorites', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -125,6 +126,8 @@ function saveFavoriteCurrencyPair() {
     })
     .then(data => {
       console.log('Favorite saved:', data);
+       // Reload favorites to display the newly added favorite
+       loadFavorites();
     })
     .catch(error => {
       console.error('Error saving favorite:', error.message);
@@ -132,24 +135,56 @@ function saveFavoriteCurrencyPair() {
   }
 }
 
+// Delete favorite currency pair
+function deleteFavoriteCurrencyPair(id) {
+  fetch(`http://localhost:3000/api/favorites/${id}`, {
+    method: 'DELETE'
+  })
+  .then(response => response.json())
+  .then(data => {
+    console.log('Favorite deleted:', data);
+    // Reload favorites to remove the deleted favorite
+    loadFavorites();
+  })
+  .catch(error => {
+    console.error('Error deleting favorite:', error.message);
+  });
+}
+
 // Load favorite currency pairs from database
 function loadFavorites() {
-  fetch('/api/favorites')
+  favoriteCurrencyPairsContainer.innerHTML = ''; // Clear the container before loading
+  fetch('http://localhost:3000/api/favorites')
     .then(response => response.json())
     .then(favorites => {
+      const ul = document.createElement('ul'); // Create a list to hold favorite pairs
       favorites.forEach(favorite => {
         const favoritePair = `${favorite.baseCurrency}/${favorite.targetCurrency}`;
-        const favoriteItem = document.createElement('div');
-        favoriteItem.textContent = favoritePair;
-        favoriteItem.addEventListener('click', () => {
+        const li = document.createElement('li'); // Create a list item
+        const button = document.createElement('button'); // Create a button inside the list item
+        button.textContent = favoritePair;
+        button.addEventListener('click', () => {
           baseCurrencySelect.value = favorite.baseCurrency;
           targetCurrencySelect.value = favorite.targetCurrency;
           convertCurrency();
         });
-        favoriteCurrencyPairsContainer.appendChild(favoriteItem);
+
+         // Create delete button
+         const deleteButton = document.createElement('button');
+         deleteButton.textContent = 'Delete';
+         deleteButton.style.marginLeft = '10px'; // Add some space between the buttons
+         deleteButton.addEventListener('click', () => {
+           deleteFavoriteCurrencyPair(favorite.id); // Add delete functionality
+         });
+
+        li.appendChild(button); // Append the button to the list item
+        li.appendChild(deleteButton); // Append the delete button to the list item
+        ul.appendChild(li); // Append the list item to the list
       });
+      favoriteCurrencyPairsContainer.appendChild(ul); // Append the list to the container
     })
     .catch(error => console.error('Error loading favorites:', error));
 }
 
 // Initial load
+loadFavorites();

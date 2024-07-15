@@ -1,6 +1,0 @@
-{
-  "config": "config/config.json",
-  "models-path": "models",
-  "seeders-path": "seeders",
-  "migrations-path": "migrations"
-}
